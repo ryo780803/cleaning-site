@@ -1403,6 +1403,33 @@ const calculatePrice = (m2) => {
         <p class="modal-note">※上記以上のサイズや特殊なリネンについては、別途ご相談にて承ります。</p>
     </div>
 </div>
+
+<style is:global>
+  /* メニューボタンの強制表示 */
+  .menu-trigger {
+    display: none; /* デフォルトは非表示 */
+    position: fixed;
+    top: 20px;
+    right: 5%;
+    z-index: 9999; /* 最前面に固定 */
+    background: #000;
+    color: #d4af37;
+    border: 1px solid #d4af37;
+    padding: 10px 20px;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+
+  @media (max-width: 950px) {
+    .menu-trigger {
+      display: block !important; /* スマホでは必ず表示 */
+    }
+    
+    .nav-desktop {
+      display: none !important; /* PCメニューはスマホでは隠す */
+    }
+  }
+</style>
 <style is:global>
   /* 既存のlinen-tableスタイルに以下を追加・上書き */
   .table-option th {
