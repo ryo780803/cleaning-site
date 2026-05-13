@@ -1,11 +1,2064 @@
 ---
-import Welcome from '../components/Welcome.astro';
-import Layout from '../layouts/Layout.astro';
+// --- [設定エリア] 計算はここですべて終わらせます ---
+const pageTitle = "CRAFT | 研ぎ澄まされた清掃";
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+const navItems = [
+  { name: "TOP", href: "#top" },
+  { name: "CONCEPT", href: "#concept" },
+  { name: "CRAFT", href: "#craft" },
+  { name: "PRICE", href: "#price" },
+];
+
+// 表示したい平米数のリスト
+const targetSizes = [75, 80, 90, 100, 120, 150];
+
+// 料金計算関数
+const calculatePrice = (m2) => {
+  let price = 9500;
+  if (m2 > 85 && m2 <= 100) {
+    price = 9500 + Math.ceil((m2 - 85) / 5) * 500;
+  } else if (m2 > 100) {
+    price = 11000 + Math.ceil((m2 - 100) / 5) * 1000;
+  }
+  return price.toLocaleString();
+};
 ---
 
-<Layout>
-	<Welcome />
-</Layout>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>{pageTitle}</title>
+    <style>
+        :root {
+            --bg-color: #0a0a0a;
+            --accent-color: #d4af37;
+            --text-color: #ffffff;
+            --muted-color: #666666;
+        }
+        body {
+            margin: 0; background: var(--bg-color); color: var(--text-color);
+            font-family: 'Helvetica Neue', 'Hiragino Kaku Gothic ProN', sans-serif; 
+            scroll-behavior: smooth; line-height: 1.6;
+        }
+
+        header {
+            position: fixed; top: 0; width: 100%; height: 70px;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 5%; box-sizing: border-box; z-index: 1000;
+            background: rgba(10, 10, 10, 0.9); backdrop-filter: blur(15px);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .nav-desktop { display: flex; gap: 30px; }
+        .nav-desktop a { color: white; text-decoration: none; font-size: 0.7rem; letter-spacing: 0.15em; opacity: 0.6; transition: 0.3s; }
+        .nav-desktop a:hover { opacity: 1; color: var(--accent-color); }
+
+        section { width: 100%; padding: 120px 10%; box-sizing: border-box; }
+        .label { color: var(--accent-color); font-size: 0.7rem; letter-spacing: 0.4em; display: block; margin-bottom: 1.5rem; }
+        h2 { font-size: clamp(1.8rem, 5vw, 2.5rem); font-weight: 200; margin-bottom: 2rem; letter-spacing: 0.05em; }
+
+        .hero {
+            height: 90vh; display: flex; flex-direction: column; justify-content: center;
+            background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80');
+            background-size: cover; background-position: center;
+        }
+        .hero h1 { font-size: clamp(2.5rem, 8vw, 6rem); line-height: 1; margin: 0; font-weight: 200; }
+
+        .craft-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 60px 40px; margin-top: 60px; }
+        .craft-item { border-top: 1px solid #222; padding-top: 30px; }
+        .craft-num { font-size: 0.7rem; color: var(--accent-color); margin-bottom: 15px; display: block; }
+        .craft-title { font-size: 1.2rem; font-weight: 400; margin-bottom: 15px; }
+        .craft-desc { font-size: 0.85rem; color: #888; line-height: 2; }
+
+        /* 料金カードグリッド */
+        .price-card-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            max-width: 1100px;
+            margin: 40px auto 0;
+        }
+
+        .premium-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #ddd;
+            box-shadow: 0 6px 0px #ccc;
+            position: relative;
+            top: 0;
+            transition: all 0.1s ease;
+            cursor: pointer;
+        }
+        .premium-card:hover { top: 4px; box-shadow: 0 2px 0px #ccc; background: #fff; }
+        .card-m2 { font-size: 1.1rem; color: #333; font-weight: bold; margin-bottom: 8px; }
+        .card-price { font-size: 1.5rem; color: var(--accent-color); font-weight: 300; }
+        .card-price span { font-size: 0.65rem; color: #999; margin-left: 4px; }
+
+        @media (max-width: 1024px) { .price-card-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 768px) { section { padding: 80px 5%; } .nav-desktop { display: none; } }
+        @media (max-width: 640px) { .price-card-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-logo">Shinrai Osoji</div>
+    
+<!-- デスクトップ用メニュー（header内） -->
+<nav class="nav-desktop">
+    <a href="#top">TOP</a>
+    <a href="#concept">CONCEPT</a>
+    <a href="#craft">CRAFT</a>
+    <a href="#price">PRICE</a>
+    <a href="#area">AREA</a>
+    <a href="#flow">FLOW</a>
+    <a href="#works">WORKS</a>
+    <a href="#staff">STAFF</a>
+    <a href="#faq">FAQ</a>
+</nav>
+
+<!-- 斜めカットインメニュー（mobile-menu-overlay内） -->
+<nav class="mobile-nav">
+    <a href="#top" class="menu-link"><span class="link-num">01</span>TOP</a>
+    <a href="#concept" class="menu-link"><span class="link-num">02</span>CONCEPT</a>
+    <a href="#craft" class="menu-link"><span class="link-num">03</span>CRAFT</a>
+    <a href="#price" class="menu-link"><span class="link-num">04</span>PRICE</a>
+    <a href="#area" class="menu-link"><span class="link-num">05</span>AREA</a>
+    <a href="#flow" class="menu-link"><span class="link-num">06</span>FLOW</a>
+    <a href="#works" class="menu-link"><span class="link-num">07</span>WORKS</a>
+    <a href="#staff" class="menu-link"><span class="link-num">08</span>STAFF</a>
+    <a href="#faq" class="menu-link"><span class="link-num">09</span>FAQ</a>
+</nav>
+
+    <!-- スマホ用ボタン -->
+    <button class="menu-trigger" id="menu-trigger">
+        <span>MENU</span>
+    </button>
+</header>
+<style is:global>
+  header {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    height: 80px; /* 少し高さを出すとゆとりが出ます */
+    display: flex;
+    justify-content: space-between; /* ロゴは左、メニューは右に分散 */
+    align-items: center;
+    padding: 0 5%;
+    box-sizing: border-box;
+    z-index: 1000;
+    background: rgba(10, 10, 10, 0.9);
+    backdrop-filter: blur(15px);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .header-logo {
+    font-weight: bold;
+    letter-spacing: 0.3em;
+    font-size: 1rem;
+    white-space: nowrap; /* これで1行に固定します */
+    flex-shrink: 0;      /* ロゴが潰れないように保持 */
+    margin-right: 40px;  /* メニューとの最小間隔 */
+  }
+
+  .nav-desktop {
+    display: flex;
+    gap: 25px;           /* 項目間の距離を微調整 */
+    margin-left: auto;   /* これでメニューを右側に寄せます */
+  }
+
+  .nav-desktop a {
+    color: white;
+    text-decoration: none;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    opacity: 0.6;
+    transition: 0.3s;
+    white-space: nowrap; /* メニュー文字も改行させない */
+  }
+
+  /* 画面幅が狭まってきた時の調整（ロゴとメニューがぶつからないように） */
+  @media (max-width: 1100px) {
+    .nav-desktop {
+      gap: 15px;
+    }
+    .header-logo {
+      font-size: 0.85rem;
+    }
+  }
+
+  /* スマホサイズへの切り替え（既存の768px等に合わせて調整） */
+  @media (max-width: 950px) {
+    .nav-desktop {
+      display: none; /* 項目数が多いので早めにハンバーガーに切り替えるのが安全です */
+    }
+    .menu-trigger {
+      display: block;
+    }
+  }
+</style>
+
+
+<!-- 斜めカットインメニュー -->
+<div class="mobile-menu-overlay" id="mobile-menu">
+    <!-- 戻るボタン（閉じるボタン） -->
+    <button class="menu-close" id="menu-close">
+        <span class="close-icon"></span>
+        <span class="close-text">BACK</span>
+    </button>
+
+<nav class="mobile-nav">
+    <!-- <a href="#top" class="menu-link"><span class="link-num">01</span>TOP</a> -->
+    <a href="#concept" class="menu-link"><span class="link-num">01</span>CONCEPT</a>
+    <a href="#craft" class="menu-link"><span class="link-num">02</span>CRAFT</a>
+    <a href="#price" class="menu-link"><span class="link-num">03</span>PRICE</a>
+    <a href="#area" class="menu-link"><span class="link-num">04</span>AREA</a>
+    <a href="#flow" class="menu-link"><span class="link-num">05</span>FLOW</a>
+    <a href="#works" class="menu-link"><span class="link-num">06</span>WORKS</a>
+    <a href="#staff" class="menu-link"><span class="link-num">07</span>STAFF</a>
+    <a href="#faq" class="menu-link"><span class="link-num">08</span>FAQ</a>
+</nav>
+</div>
+<style is:global>
+  /* --- メニューを開くボタン --- */
+  .menu-trigger {
+    display: none;
+    background: none;
+    border: 1px solid rgba(255,255,255,0.3);
+    color: #fff;
+    padding: 8px 15px;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    cursor: pointer;
+    z-index: 1000;
+  }
+
+  /* --- 斜めカットインオーバーレイ --- */
+  .mobile-menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    background: #000;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    /* 斜めのクリップパスアニメーション */
+    clip-path: inset(0 0 100% 0); /* 上から下に閉じてる状態 */
+    transition: clip-path 0.7s cubic-bezier(0.85, 0, 0.15, 1);
+    visibility: hidden;
+  }
+
+  .mobile-menu-overlay.is-open {
+    visibility: visible;
+    clip-path: inset(0 0 0 0); /* 全開 */
+  }
+
+  /* --- 戻るボタン --- */
+/* --- 矢印のズレを修正 --- */
+  .menu-close {
+    position: absolute;
+    top: 30px;
+    right: 5%;
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center; /* 縦方向の中央揃えを強制 */
+    gap: 12px;
+    color: #d4af37;
+    padding: 10px;
+  }
+
+.close-icon {
+    width: 24px; /* 少し長くして視認性アップ */
+    height: 1px;
+    background: #d4af37;
+    position: relative;
+    display: block;
+    margin-top: 1px; /* 微調整：テキストの高さに合わせる */
+  }
+
+  .close-icon::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 7px;
+    height: 7px;
+    border-top: 1px solid #d4af37;
+    border-left: 1px solid #d4af37;
+    transform: translateY(-50%) rotate(-45deg); /* 中央から回転させる */
+  }
+
+  .close-text {
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+  }
+
+  /* --- メニュー内リンク（斜め演出） --- */
+  .mobile-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+    padding: 0 15%;
+  }
+
+  .menu-link {
+    font-size: 1.8rem;
+    color: #fff;
+    text-decoration: none;
+    font-weight: 200;
+    letter-spacing: 0.1em;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    padding: 15px 0;
+    display: flex;
+    align-items: center;
+    transform: skewX(-15deg) translateX(-50px); /* 斜めにする */
+    opacity: 0;
+    transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1), opacity 0.4s linear;
+  }
+
+  .mobile-menu-overlay.is-open .menu-link {
+    opacity: 1;
+    transform: skewX(-15deg) translateX(0); /* 斜めのままスライドイン */
+  }
+
+/* --- アニメーション速度の最適化（FAQが遅れないように） --- */
+  /* 全体の間隔を 0.05s → 0.03s に短縮してテンポを上げます */
+  .mobile-menu-overlay.is-open .menu-link:nth-child(1) { transition-delay: 0.1s; }
+  .mobile-menu-overlay.is-open .menu-link:nth-child(2) { transition-delay: 0.13s; }
+  .mobile-menu-overlay.is-open .menu-link:nth-child(3) { transition-delay: 0.16s; }
+  .mobile-menu-overlay.is-open .menu-link:nth-child(4) { transition-delay: 0.19s; }
+  .mobile-menu-overlay.is-open .menu-link:nth-child(5) { transition-delay: 0.22s; }
+  .mobile-menu-overlay.is-open .menu-link:nth-child(6) { transition-delay: 0.25s; }
+  .mobile-menu-overlay.is-open .menu-link:nth-child(7) { transition-delay: 0.28s; }
+  .mobile-menu-overlay.is-open .menu-link:nth-child(8) { transition-delay: 0.31s; }
+  .mobile-menu-overlay.is-open .menu-link:nth-child(9) { transition-delay: 0.34s; }
+
+
+  .link-num {
+    font-size: 0.7rem;
+    color: #d4af37;
+    margin-right: 20px;
+    font-family: serif;
+    transform: skewX(15deg); /* 数字は読みやすく戻す */
+  }
+
+  @media (max-width: 768px) {
+    .nav-desktop { display: none; }
+    .menu-trigger { display: block; }
+  }
+</style>
+
+<style is:global>
+  /* 9項目に増えたためのスマホ用調整 */
+  @media (max-width: 768px) {
+    .mobile-nav {
+      gap: 8px; /* 間隔を少し詰める */
+      padding: 0 10%;
+      justify-content: center;
+    }
+
+    .menu-link {
+      font-size: 1.2rem; /* 文字サイズを少し小さくして1画面に収める */
+      padding: 8px 0;
+      transform: skewX(-15deg) translateX(-30px);
+    }
+    
+    .link-num {
+      font-size: 0.6rem;
+      margin-right: 12px;
+    }
+  }
+
+  /* デスクトップ版のナビが重ならないように調整 */
+  .nav-desktop {
+    gap: 15px; /* 項目数が多いので間隔を調整 */
+  }
+</style>
+
+<!-- 斜めカットインメニュー -->
+<div class="mobile-menu-overlay" id="mobile-menu">
+    <nav class="mobile-nav">
+        <a href="#top" class="menu-link">TOP</a>
+        <a href="#concept" class="menu-link">CONCEPT</a>
+        <a href="#price" class="menu-link">PRICE</a>
+        <a href="#area" class="menu-link">AREA</a>
+        <a href="#faq" class="menu-link">FAQ</a>
+    </nav>
+</div>
+
+    <section id="top" class="hero">
+        <span class="label">Authentic Cleaning Services</span>
+        <h1>We Provide<br>Clean and Comfortable spaces</h1>
+    </section>
+
+    <section id="concept">
+        <span class="label">OUR CONCEPT</span>
+        <h2>人の手だからこそできる清掃を。</h2>
+        <p style="max-width: 550px; opacity: 0.6; font-size: 0.95rem; line-height: 2;">
+            私たちは、ただ清掃をこなすのではなく、”人が快適だと感じる空間”を作ることを大切にしています。
+			<br>機械や効率だけに頼るのではなく、実際に自分たちの目で確認し、手で触れ、細部まで丁寧に仕上げる妥協の一切ない清掃を提供します。
+			<br>少数精鋭だからこそ、一件一件に責任を持ち、見落とされがちな細かな部分まで徹底して清掃します。
+        </p>
+    </section>
+
+    <section id="craft">
+        <span class="label">CRAFTMANSHIP</span>
+        <h2>細部まで妥協しないこだわり。</h2>
+        <div class="craft-grid">
+            <div class="craft-item">
+                <span class="craft-num">01</span>
+                <h3 class="craft-title">角まで清潔に</h3>
+                <p class="craft-desc">部屋の印象は、視線が止まる「角」で決まります。独自のツールによる徹底したコーナーケアを実施。</p>
+            </div>
+            <div class="craft-item">
+                <span class="craft-num">02</span>
+                <h3 class="craft-title">ヘリのゴミまで</h3>
+                <p class="craft-desc">ただ拭き上げるのではなく、素材本来の質感を蘇らせ、美しい光の反射を作り出します。</p>
+            </div>
+            <div class="craft-item">
+                <span class="craft-num">03</span>
+                <h3 class="craft-title">排水溝は素手で触れるまで綺麗に</h3>
+                <p class="craft-desc">最高級ホテルのように、日常の平穏を乱さない、プロとしての立ち振る舞いと配慮。</p>
+            </div>
+            <div class="craft-item">
+                <span class="craft-num">04</span>
+                <h3 class="craft-title">髪の毛、水気一切残さず</h3>
+                <p class="craft-desc">大理石や無垢材など繊細な素材を深く理解し、経年変化さえも美しさに変える手法を選択します。</p>
+            </div>
+        </div>
+    </section>
+
+<section id="price">
+    <div style="text-align: center;">
+        <span class="label">PRICE LIST</span>
+        <h2>料金体系</h2>
+        <p style="font-size: 0.8rem; color: #888; margin-top: -1rem; margin-bottom: 3rem;">
+            ※125㎡以上、最大150㎡まで同等の計算でお見積りいたします。
+        </p>
+    </div>
+
+    <div class="price-card-grid">
+        <!-- 75-85 -->
+        <div class="premium-card">
+            <div class="card-size">75〜85㎡</div>
+            <div class="price-row">
+                <span class="p-label">通常</span>
+                <span class="p-value">¥9,500</span>
+            </div>
+            <div class="price-row periodic">
+                <span class="p-label">定期</span>
+                <span class="p-value">¥9,000</span>
+            </div>
+        </div>
+
+        <!-- 85-95 -->
+        <div class="premium-card">
+            <div class="card-size">85〜95㎡</div>
+            <div class="price-row">
+                <span class="p-label">通常</span>
+                <span class="p-value">¥10,000</span>
+            </div>
+            <div class="price-row periodic">
+                <span class="p-label">定期</span>
+                <span class="p-value">¥9,500</span>
+            </div>
+        </div>
+
+        <!-- 95-105 -->
+        <div class="premium-card">
+            <div class="card-size">95〜105㎡</div>
+            <div class="price-row">
+                <span class="p-label">通常</span>
+                <span class="p-value">¥10,500</span>
+            </div>
+            <div class="price-row periodic">
+                <span class="p-label">定期</span>
+                <span class="p-value">¥10,000</span>
+            </div>
+        </div>
+
+        <!-- 105-115 -->
+        <div class="premium-card">
+            <div class="card-size">105〜115㎡</div>
+            <div class="price-row">
+                <span class="p-label">通常</span>
+                <span class="p-value">¥11,500</span>
+            </div>
+            <div class="price-row periodic">
+                <span class="p-label">定期</span>
+                <span class="p-value">¥11,000</span>
+            </div>
+        </div>
+
+        <!-- 115-125 -->
+        <div class="premium-card highlight">
+            <div class="card-size">115〜125㎡</div>
+            <div class="price-row">
+                <span class="p-label">通常</span>
+                <span class="p-value">¥12,500</span>
+            </div>
+            <div class="price-row periodic">
+                <span class="p-label">定期</span>
+                <span class="p-value">¥11,500</span>
+            </div>
+        </div>
+
+        <!-- 125-150 (Note) -->
+        <div class="premium-card info">
+            <div class="card-size">125〜150㎡</div>
+            <p style="font-size: 0.7rem; color: #666; margin-top: 10px;">
+                115〜125㎡のプランに基づき<br>個別にお見積りいたします。
+            </p>
+        </div>
+    </div>
+</section>
+<style is:global>
+  .price-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .premium-card {
+    background: #111;
+    border: 1px solid #222;
+    padding: 30px;
+    text-align: center;
+    transition: 0.3s;
+  }
+
+  .premium-card:hover {
+    border-color: #d4af37;
+    transform: translateY(-5px);
+  }
+
+  .card-size {
+    font-size: 0.8rem;
+    color: #888;
+    letter-spacing: 0.1em;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #222;
+    padding-bottom: 10px;
+  }
+
+  .price-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+  }
+
+  .periodic {
+    background: rgba(212, 175, 55, 0.05);
+    padding: 10px;
+    margin-top: 15px;
+    border-radius: 2px;
+  }
+
+  .p-label {
+    font-size: 0.7rem;
+    color: #666;
+  }
+
+  .periodic .p-label {
+    color: #d4af37;
+    font-weight: bold;
+  }
+
+  .p-value {
+    font-size: 1.4rem;
+    color: #666;
+    font-family: serif;
+  }
+
+  .periodic .p-value {
+    color: #d4af37;
+  }
+
+  /* 150平米のカード用 */
+  .premium-card.info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-style: dashed;
+  }
+</style>
+
+<!-- 05. AREA -->
+<section id="area" class="area-section">
+    <div style="text-align: center; width: 100%;">
+        <span class="label">SERVICE AREA</span>
+        <h2>対応エリア</h2>
+    </div>
+
+    <div class="area-content">
+        <div class="area-text">
+            <h3 class="city-name">岐阜県 高山市街地</h3>
+            <p class="area-desc">
+                高山市の中心市街地エリアに特化してサービスを提供しております。
+                対象エリアを絞ることで、迅速な対応と質の高いメンテナンス体制を維持しています。
+            </p>
+            
+            <ul class="area-list">
+                <li>中心市街地（本町・上三之町 周辺）</li>
+                <li>駅前・花里・総和町 周辺</li>
+                <li>問屋町・下岡本町 周辺</li>
+                <li>千島・西之一色町 周辺</li>
+            </ul>
+
+            <div class="area-note">
+                <p>※上記以外の周辺地域については、現在定期清掃のご契約をいただいているお客様のみの対応とさせていただいております。</p>
+            </div>
+        </div>
+
+        <!-- Google Map等を入れるスペース -->
+        <div class="area-map-container">
+            <div class="map-placeholder">
+                <span class="map-icon">📍</span>
+                <p>TAKAYAMA DOWNTOWN</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 06. FLOW -->
+<section id="flow" class="flow-section">
+    <div style="text-align: center; width: 100%;">
+        <span class="label">PROCESS</span>
+        <h2>ご契約までの流れ</h2>
+    </div>
+
+    <div class="flow-container">
+        <div class="flow-item">
+            <div class="flow-num">01</div>
+            <div class="flow-content">
+                <h3 class="flow-title">お問い合わせ</h3>
+                <p class="flow-text">
+                    まずは下記のLINEよりご連絡ください。清掃対象の広さや、特に気にされている箇所などをお伺いします。
+                </p>
+            </div>
+        </div>
+
+        <div class="flow-item">
+            <div class="flow-num">02</div>
+            <div class="flow-content">
+                <h3 class="flow-title">現地調査（立ち会い）</h3>
+                <p class="flow-text">
+                    実際に現場を拝見し、汚れの状態や素材、什器の配置などを確認させていただきます。お客様の理想とする「美しさ」の基準を共有する大切な工程です。
+                </p>
+            </div>
+        </div>
+
+        <div class="flow-item">
+            <div class="flow-num">03</div>
+            <div class="flow-content">
+                <h3 class="flow-title">お見積りの提示</h3>
+                <p class="flow-text">
+                    現地調査に基づき、最適なプランとお見積りを作成します。一項目ずつ透明性のある計算を行い、詳細をご説明いたします。
+                </p>
+            </div>
+        </div>
+
+        <div class="flow-item">
+            <div class="flow-num">04</div>
+            <div class="flow-content">
+                <h3 class="flow-title">ご検討・ご契約</h3>
+                <p class="flow-text">
+                    お見積り内容をじっくりとご検討ください。ご納得いただけましたら、正式なご契約・作業日程の調整へと進みます。無理な勧誘は一切行いません。
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 07. SERVICE PROCESS -->
+<section id="service-process" class="process-section">
+    <div style="text-align: center; width: 100%;">
+        <span class="label">ON-SITE PROCESS</span>
+        <h2>当日の清掃の流れ</h2>
+    </div>
+
+    <div class="process-grid">
+        <div class="process-card">
+            <div class="process-header">
+                <span class="process-step">01</span>
+                <h3 class="process-title">現状報告</h3>
+            </div>
+            <p class="process-text">
+                清掃開始前に、現状の汚れ具合や気になる箇所を撮影。LINE等でお客様へリアルタイムに報告いたします。離れた場所にいても安心してお任せいただけます。
+            </p>
+        </div>
+
+        <div class="process-card">
+            <div class="process-header">
+                <span class="process-step">02</span>
+                <h3 class="process-title">徹底清掃</h3>
+            </div>
+            <p class="process-text">
+                最善を尽くし細部まで磨き上げます。素材に合わせた最適な洗剤、清掃用具を選定し、できる限り最初の状態に戻しつつ、維持します。
+            </p>
+        </div>
+
+        <div class="process-card">
+            <div class="process-header">
+                <span class="process-step">03</span>
+                <h3 class="process-title">完了報告</h3>
+            </div>
+            <p class="process-text">
+                作業終了後、仕上がりを撮影し再びLINE等で報告いたします。ビフォーアフターを明確にすることで、確かな品質を保証いたします。
+            </p>
+        </div>
+    </div>
+</section>
+
+<style is:global>
+  .process-section {
+    background-color: #000;
+    border-top: 1px solid #1a1a1a;
+  }
+
+  .process-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 30px;
+    margin-top: 60px;
+    max-width: 1100px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .process-card {
+    background: #0a0a0a;
+    border: 1px solid #222;
+    padding: 40px 30px;
+    transition: 0.4s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .process-card:hover {
+    border-color: #d4af37;
+    background: #111;
+  }
+
+  .process-header {
+    margin-bottom: 25px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+
+  .process-step {
+    font-family: serif;
+    color: #d4af37;
+    font-size: 0.8rem;
+    letter-spacing: 0.2em;
+    border-bottom: 1px solid #d4af37;
+    padding-bottom: 2px;
+  }
+
+  .process-title {
+    font-size: 1.1rem;
+    font-weight: 400;
+    color: #fff;
+    letter-spacing: 0.05em;
+  }
+
+  .process-text {
+    font-size: 0.85rem;
+    color: #888;
+    line-height: 2;
+    text-align: justify;
+  }
+
+  /* スマホ対応 */
+  @media (max-width: 900px) {
+    .process-grid {
+      grid-template-columns: 1fr !important;
+      gap: 20px;
+    }
+    .process-card {
+      padding: 30px;
+    }
+  }
+</style>
+
+<!-- 08. WORKS -->
+<section id="works" class="works-section">
+    <div style="text-align: center; width: 100%;">
+        <span class="label">PORTFOLIO</span>
+        <h2>清掃実績と施工事例</h2>
+    </div>
+
+    <!-- 実績リスト -->
+    <div class="works-summary">
+        <div class="summary-item">
+            <span class="summary-label">主な実績</span>
+            <p class="summary-list">高級層旅館/
+				P物件 / B物件 / A物件 / N物件 ほか多数</p>
+        </div>
+        <div class="summary-item">
+            <span class="summary-label">顧客満足度</span>
+            <div class="stars">
+                ★★★★★ <span class="star-text">5.0 / 5.0 (All Reviews)</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ビフォーアフター展示 -->
+    <div class="ba-grid">
+        <div class="ba-card">
+            <div class="ba-image-container">
+                <div class="ba-label before">BEFORE</div>
+                <div class="ba-label after">AFTER</div>
+                <div class="ba-images">
+                    <!-- 左半分：Before / 右半分：After のイメージ -->
+                    <div class="ba-placeholder b-img"></div>
+                    <div class="ba-placeholder a-img"></div>
+                </div>
+            </div>
+            <div class="ba-info">
+                <h3 class="ba-title">水垢の除去</h3>
+                <p class="ba-desc">長年の歩行で蓄積した黒ずみを除去し、素材本来の光沢を復元しました。</p>
+            </div>
+        </div>
+
+        <div class="ba-card">
+            <div class="ba-image-container">
+                <div class="ba-label before">BEFORE</div>
+                <div class="ba-label after">AFTER</div>
+                <div class="ba-images">
+                    <div class="ba-placeholder b-img-2"></div>
+                    <div class="ba-placeholder a-img-2"></div>
+                </div>
+            </div>
+            <div class="ba-info">
+                <h3 class="ba-title">B物件：水回り</h3>
+                <p class="ba-desc">水垢や金属のくすみを取り除き、鏡面のような輝きを取り戻しました。</p>
+            </div>
+        </div>
+    </div>
+</section>
+<style is:global>
+  .works-section {
+    background-color: #0a0a0a;
+    border-top: 1px solid #1a1a1a;
+  }
+
+  /* 実績概要 */
+  .works-summary {
+    max-width: 800px;
+    margin: 40px auto 80px;
+    display: flex;
+    justify-content: space-around;
+    border: 1px solid #222;
+    padding: 30px;
+    background: #000;
+  }
+
+  .summary-item {
+    text-align: center;
+  }
+
+  .summary-label {
+    display: block;
+    font-size: 0.65rem;
+    color: #d4af37;
+    letter-spacing: 0.2em;
+    margin-bottom: 10px;
+  }
+
+  .summary-list {
+    font-size: 1rem;
+    color: #fff;
+    font-weight: 200;
+  }
+
+  .stars {
+    color: #d4af37;
+    font-size: 1.1rem;
+    letter-spacing: 0.1em;
+  }
+
+  .star-text {
+    font-size: 0.75rem;
+    color: #666;
+    margin-left: 10px;
+    font-family: sans-serif;
+  }
+
+  /* Before After カード */
+  .ba-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .ba-card {
+    background: #111;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .ba-image-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #222;
+  }
+
+  .ba-images {
+    display: flex;
+    width: 100%;
+    height: 100%;
+  }
+
+  .ba-placeholder {
+    flex: 1;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    filter: brightness(0.7);
+  }
+
+  /* 実際の画像URLがあればここに設定、なければグレーのまま */
+  .b-img { background-color: #333; border-right: 1px solid #000; }
+  .a-img { background-color: #444; filter: brightness(1.1); }
+  .b-img-2 { background-color: #333; border-right: 1px solid #000; }
+  .a-img-2 { background-color: #444; filter: brightness(1.1); }
+
+  .ba-label {
+    position: absolute;
+    top: 10px;
+    font-size: 0.6rem;
+    padding: 4px 8px;
+    letter-spacing: 0.1em;
+    z-index: 10;
+  }
+
+  .before { left: 10px; background: rgba(0,0,0,0.6); color: #ccc; }
+  .after { right: 10px; background: #d4af37; color: #000; font-weight: bold; }
+
+  .ba-info {
+    padding: 25px;
+  }
+
+  .ba-title {
+    font-size: 1rem;
+    color: #fff;
+    margin-bottom: 10px;
+    font-weight: 400;
+  }
+
+  .ba-desc {
+    font-size: 0.8rem;
+    color: #888;
+    line-height: 1.6;
+  }
+
+  @media (max-width: 800px) {
+    .ba-grid { grid-template-columns: 1fr !important; }
+    .works-summary { flex-direction: column; gap: 30px; }
+  }
+</style>
+
+<!-- 09. STAFF -->
+<section id="staff" class="staff-section">
+    <div style="text-align: center; width: 100%;">
+        <span class="label">OUR TEAM</span>
+        <h2>スタッフ紹介</h2>
+    </div>
+
+    <div class="staff-grid">
+        <!-- スタッフ1 -->
+        <div class="staff-card">
+            <div class="staff-image-wrapper">
+                <div class="staff-placeholder"></div>
+            </div>
+            <div class="staff-info">
+                <span class="staff-role">Staff 01</span>
+                <p class="staff-experience">
+                    ホテル清掃・民泊運営代行会社での実務を経験。
+                </p>
+                <p class="staff-text">
+                    「ゲストが扉を開けた瞬間の感動」を追求してきた経験から、ベッドメイクのシワ一つ、水滴一つ残さない徹底した仕上げに定評があります。
+                </p>
+            </div>
+        </div>
+
+        <!-- スタッフ2 -->
+        <div class="staff-card">
+            <div class="staff-image-wrapper">
+                <div class="staff-placeholder"></div>
+            </div>
+            <div class="staff-info">
+                <span class="staff-role">Staff 02</span>
+                <p class="staff-experience">
+                    高級ホテル・民泊清掃の現場責任者を歴任。
+                </p>
+                <p class="staff-text">
+                    素材ごとの適切なメンテナンスと効率的な作業フローの構築を得意としています。プロ意識に基づいた「見えない場所まで手を抜かない」姿勢を貫いています。
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+<style is:global>
+  .staff-section {
+    background-color: #000;
+    border-top: 1px solid #1a1a1a;
+  }
+
+  .staff-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    max-width: 1000px;
+    margin: 60px auto 0;
+  }
+
+  .staff-card {
+    display: flex;
+    flex-direction: column;
+    background: #0a0a0a;
+    border: 1px solid #222;
+    padding: 30px;
+    transition: 0.3s;
+  }
+
+  .staff-card:hover {
+    border-color: #d4af37;
+  }
+
+  .staff-image-wrapper {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    background: #1a1a1a;
+    margin-bottom: 25px;
+    overflow: hidden;
+  }
+
+  .staff-placeholder {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(45deg, #111, #222);
+    /* 実際の写真がある場合はここを背景画像に */
+  }
+
+  .staff-role {
+    font-size: 0.65rem;
+    color: #d4af37;
+    letter-spacing: 0.2em;
+    display: block;
+    margin-bottom: 8px;
+    font-family: serif;
+  }
+
+  .staff-name {
+    font-size: 1.3rem;
+    color: #fff;
+    font-weight: 300;
+    margin-bottom: 15px;
+    letter-spacing: 0.1em;
+  }
+
+  .staff-experience {
+    font-size: 0.8rem;
+    color: #ccc;
+    background: #1a1a1a;
+    padding: 8px 12px;
+    border-left: 2px solid #d4af37;
+    margin-bottom: 20px;
+    line-height: 1.4;
+  }
+
+  .staff-text {
+    font-size: 0.85rem;
+    color: #888;
+    line-height: 1.8;
+  }
+
+  @media (max-width: 768px) {
+    .staff-grid {
+      grid-template-columns: 1fr !important;
+    }
+    .staff-card {
+      max-width: 450px;
+      margin: 0 auto;
+    }
+  }
+</style>
+
+<!-- 10. FAQ -->
+<section id="faq" class="faq-section">
+    <div style="text-align: center; width: 100%;">
+        <span class="label">QUESTIONS</span>
+        <h2>よくある質問</h2>
+    </div>
+
+    <div class="faq-container">
+        <!-- 質問1: 単発依頼 -->
+        <details class="faq-item">
+            <summary class="faq-question">
+                <span class="q-icon">Q</span>
+                単発での依頼は可能でしょうか？
+                <span class="arrow"></span>
+            </summary>
+            <div class="faq-answer">
+                <p>はい、他の清掃予約と重複していない場合は対応可能です。スケジュールの調整が必要なため、作業希望日の5日前までにご連絡をいただけますと幸いです。</p>
+            </div>
+        </details>
+
+<!-- 質問2: リネン管理 -->
+<details class="faq-item">
+    <summary class="faq-question">
+        <span class="q-icon">Q</span>
+        リネン管理もお願いすることはできますか？
+        <span class="arrow"></span>
+    </summary>
+    <div class="faq-answer">
+        <p>
+            はい、承っております。通常の清掃単価にプラスして別途料金が発生いたします。
+            <button type="button" class="detail-open-btn" id="open-linen-modal">料金表の詳細を見る</button>
+        </p>
+    </div>
+</details>
+
+<!-- 質問3: 運営代行 -->
+<details class="faq-item">
+    <summary class="faq-question">
+        <span class="q-icon">Q</span>
+        清掃だけでなく運営代行も可能ですか？
+        <span class="arrow"></span>
+    </summary>
+    <div class="faq-answer">
+        <p>
+            はい、可能です。その場合は売上の数割を代行手数料としていただく契約形態となります。
+            <button type="button" class="detail-open-btn" id="open-proxy-modal">手数料の計算例を見る</button>
+        </p>
+    </div>
+</details>
+<!-- 運営代行シミュレーションポップアップ -->
+<div class="modal-overlay" id="proxy-modal">
+    <div class="modal-content">
+        <button class="modal-close" id="close-proxy-modal">&times;</button>
+        <h3 class="modal-title">代行手数料の計算例</h3>
+        
+        <div class="simulation-box">
+            <p class="sim-label">月間の総売上が <strong>450,000円</strong> の場合</p>
+            <div class="sim-calc">
+                <p>450,000円 × 手数料30%</p>
+                <div class="sim-result">
+                    <span class="res-label">代行手数料：</span>
+                    <span class="res-value">135,000円</span>
+                </div>
+            </div>
+        </div>
+        
+        <p class="modal-note">※対応範囲や物件の規模に応じて、パーセンテージは多少変動いたします。詳細はお打ち合わせにて決定いたします。</p>
+    </div>
+</div>
+<style is:global>
+  .simulation-box {
+    background: #1a1a1a;
+    padding: 25px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  .sim-label {
+    font-size: 0.85rem;
+    color: #ccc;
+    margin-bottom: 15px;
+  }
+  .sim-label strong {
+    color: #fff;
+    font-size: 1.1rem;
+    border-bottom: 1px solid #d4af37;
+  }
+  .sim-calc {
+    font-size: 0.9rem;
+    color: #888;
+  }
+  .sim-result {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #333;
+  }
+  .res-label {
+    font-size: 0.8rem;
+    color: #d4af37;
+  }
+  .res-value {
+    font-size: 1.5rem;
+    color: #fff;
+    font-weight: bold;
+  }
+</style>
+
+        <!-- 質問4: 旅館対応 -->
+        <details class="faq-item">
+            <summary class="faq-question">
+                <span class="q-icon">Q</span>
+                旅館の清掃をお任せすることは可能でしょうか？
+                <span class="arrow"></span>
+            </summary>
+            <div class="faq-answer">
+                <p>はい、お任せいただけます。ただし、施設の規模や清掃状況、スケジュールの空き具合によってはお断りさせていただく場合もございます。あらかじめご了承いただき、まずは一度現地調査を含めご相談ください。</p>
+            </div>
+        </details>
+    </div>
+</section>
+<style is:global>
+  .faq-section {
+    background-color: #0a0a0a;
+    border-top: 1px solid #1a1a1a;
+  }
+
+  .faq-container {
+    max-width: 800px;
+    margin: 60px auto 0;
+  }
+
+  .faq-item {
+    border-bottom: 1px solid #222;
+    margin-bottom: 10px;
+  }
+
+  .faq-question {
+    list-style: none; /* デフォルトの三角を消す */
+    padding: 25px 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    font-size: 1rem;
+    color: #fff;
+    font-weight: 300;
+    position: relative;
+  }
+
+  .faq-question::-webkit-details-marker {
+    display: none; /* Safari用の三角消し */
+  }
+
+  .q-icon {
+    color: #d4af37;
+    font-family: serif;
+    font-weight: bold;
+    margin-right: 20px;
+    font-size: 1.2rem;
+  }
+
+  /* 矢印アイコンの自作 */
+  .arrow {
+    position: absolute;
+    right: 10px;
+    width: 10px;
+    height: 10px;
+    border-right: 1px solid #666;
+    border-bottom: 1px solid #666;
+    transform: rotate(45deg);
+    transition: 0.3s;
+  }
+
+  .faq-item[open] .arrow {
+    transform: rotate(-135deg);
+    border-color: #d4af37;
+  }
+
+  .faq-answer {
+    padding: 0 0 25px 45px;
+    color: #888;
+    font-size: 0.9rem;
+    line-height: 1.8;
+    animation: fadeIn 0.4s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 640px) {
+    .faq-question { font-size: 0.9rem; }
+    .faq-answer { padding-left: 35px; }
+  }
+</style>
+
+<!-- リネン料金ポップアップ -->
+<div class="modal-overlay" id="linen-modal">
+    <div class="modal-content">
+        <button class="modal-close" id="close-linen-modal">&times;</button>
+        <h3 class="modal-title">リネン管理料金表</h3>
+        
+        <table class="linen-table">
+            <tr><th>Sシーツ</th><td>1枚 500円</td></tr>
+            <tr><th>Sデュベカバー</th><td>1枚 500円</td></tr>
+            <tr><th>SDシーツ</th><td>1枚 800円</td></tr>
+            <tr><th>SDデュベカバー</th><td>1枚 800円</td></tr>
+            <tr class="table-sep"><th>枕カバー</th><td>1枚 300円</td></tr>
+
+            <!-- 追加項目 -->
+            <tr class="table-option">
+                <th>漂白対応<span>（ハイター等による強汚れ）</span></th>
+                <td>+ 5,000円</td>
+            </tr>
+            
+            <tr class="table-highlight"><th>アイロン掛け</th><td>一律 + 10,000円</td></tr>
+        </table>
+        
+        <p class="modal-note">※上記以上のサイズや特殊なリネンについては、別途ご相談にて承ります。</p>
+    </div>
+</div>
+<style is:global>
+  /* 既存のlinen-tableスタイルに以下を追加・上書き */
+  .table-option th {
+    padding-top: 20px;
+    color: #eee;
+  }
+  .table-option th span {
+    display: block;
+    font-size: 0.65rem;
+    color: #888;
+    margin-top: 4px;
+  }
+  .table-option td {
+    padding-top: 20px;
+    font-weight: bold;
+    color: #fff;
+  }
+
+  /* アイロン掛けの上の余白を調整 */
+  .table-highlight th, .table-highlight td {
+    border-top: 1px solid #222;
+    padding-top: 15px;
+  }
+</style>
+<style is:global>
+  /* 詳細ボタン */
+  .detail-open-btn {
+    background: none;
+    border: 1px solid #d4af37;
+    color: #d4af37;
+    padding: 5px 15px;
+    font-size: 0.75rem;
+    margin-top: 10px;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  .detail-open-btn:hover {
+    background: #d4af37;
+    color: #000;
+  }
+
+  /* ポップアップ外側 */
+  .modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(5px);
+    z-index: 3000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: 0.3s;
+  }
+  .modal-overlay.is-visible {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* ポップアップ内側 */
+  .modal-content {
+    background: #111;
+    border: 1px solid #333;
+    padding: 40px;
+    width: 90%;
+    max-width: 450px;
+    position: relative;
+    transform: translateY(20px);
+    transition: 0.4s;
+  }
+  .modal-overlay.is-visible .modal-content {
+    transform: translateY(0);
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 15px; right: 15px;
+    background: none; border: none;
+    color: #888; font-size: 2rem; cursor: pointer;
+  }
+
+  .modal-title {
+    color: #d4af37;
+    text-align: center;
+    font-size: 1.2rem;
+    margin-bottom: 30px;
+    letter-spacing: 0.1em;
+  }
+
+  /* 料金テーブル */
+  .linen-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+  }
+  .linen-table th, .linen-table td {
+    padding: 12px 0;
+    border-bottom: 1px solid #222;
+    font-size: 0.9rem;
+  }
+  .linen-table th { text-align: left; font-weight: 200; color: #ccc; }
+  .linen-table td { text-align: right; color: #fff; }
+  .table-sep { border-top: 2px solid #333; }
+  .table-highlight th, .table-highlight td { 
+    color: #d4af37; 
+    border-bottom: none; 
+    padding-top: 20px;
+  }
+
+  .modal-note {
+    font-size: 0.75rem;
+    color: #666;
+    text-align: center;
+    line-height: 1.6;
+  }
+</style>
+
+<!-- 11. FOOTER -->
+<footer class="main-footer">
+    <div class="footer-content">
+        <div class="footer-brand">
+            <h2 class="footer-logo">Shinrai Osoji</h2>
+            <p class="footer-tagline">人の手だからこそ、生まれる安心を。</p>
+            
+            <div class="footer-contact-box">
+    <div class="contact-header">
+        <span class="contact-line-pill">OFFICIAL LINE</span>
+        <p class="contact-label">お見積り・ご相談は公式LINEから</p>
+    </div>
+    <a href="https://line.me/R/ti/p/@YOUR_ID" class="line-btn-premium" target="_blank" rel="noopener noreferrer">
+        <span class="btn-text">LINEで無料相談をはじめる</span>
+        <span class="btn-arrow"></span>
+    </a>
+</div>
+        </div>
+
+        <div class="footer-links-group">
+            <!-- メニューを2列に分けて配置 -->
+            <div class="footer-nav">
+                <span class="nav-title">MENU 01</span>
+                <a href="#top">TOP</a>
+                <a href="#concept">CONCEPT</a>
+                <a href="#craft">CRAFT</a>
+                <a href="#price">PRICE</a>
+                <a href="#area">AREA</a>
+            </div>
+            
+            <div class="footer-nav">
+                <span class="nav-title">MENU 02</span>
+                <a href="#flow">FLOW</a>
+                <a href="#works">WORKS</a>
+                <a href="#staff">STAFF</a>
+                <a href="#faq">FAQ</a>
+            </div>
+
+            <div class="footer-sns">
+                <span class="nav-title">SOCIAL</span>
+                <a href="#" class="sns-link">INSTAGRAM</a>
+                <a href="https://line.me/R/ti/p/@YOUR_ID" class="sns-link">LINE APP</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer-bottom">
+        <p>&copy; 2026 CRAFT CLEANING. ALL RIGHTS RESERVED.</p>
+    </div>
+</footer>
+<style is:global>
+.contact-header {
+    margin-bottom: 25px;
+  }
+
+  .contact-line-pill {
+    display: inline-block;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    color: #d4af37;
+    border: 1px solid #d4af37;
+    padding: 2px 12px;
+    border-radius: 100px;
+    margin-bottom: 10px;
+  }
+
+  .contact-label {
+    font-size: 1.1rem;
+    font-weight: 200;
+    letter-spacing: 0.05em;
+    color: #fff;
+    margin: 0;
+  }
+
+  /* プレミアムボタンデザイン */
+  .line-btn-premium {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff; /* 白背景に黒文字で高級感を出す */
+    color: #000;
+    text-decoration: none;
+    padding: 20px 40px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    letter-spacing: 0.1em;
+    transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    z-index: 1;
+  }
+
+  /* 後ろのズレた枠線演出 */
+  .line-btn-premium::before {
+    content: '';
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    width: 100%;
+    height: 100%;
+    border: 1px solid #d4af37;
+    z-index: -1;
+    transition: 0.4s;
+  }
+
+  .line-btn-premium:hover {
+    background: #d4af37;
+    color: #000;
+    transform: translate(3px, 3px);
+  }
+
+  .line-btn-premium:hover::before {
+    top: 0;
+    left: 0;
+    border-color: #fff;
+  }
+
+  .btn-arrow {
+    width: 20px;
+    height: 1px;
+    background: currentColor;
+    margin-left: 20px;
+    position: relative;
+  }
+
+  .btn-arrow::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: -3px;
+    width: 6px;
+    height: 6px;
+    border-top: 1px solid currentColor;
+    border-right: 1px solid currentColor;
+    transform: rotate(45deg);
+  }
+
+  .contact-sub-text {
+    margin-top: 15px;
+    font-size: 0.65rem;
+    color: #555;
+    letter-spacing: 0.05em;
+  }
+
+  @media (max-width: 900px) {
+    .footer-contact-box {
+        text-align: center;
+        margin: 0 auto;
+    }
+    .line-btn-premium {
+        padding: 18px 20px;
+    }
+  }
+
+  .main-footer {
+    background-color: #000;
+    color: #fff;
+    padding: 100px 10% 40px;
+    border-top: 1px solid #1a1a1a;
+  }
+
+  .footer-contact-box {
+    text-align: left;
+    max-width: 400px;
+  }
+
+  .footer-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 80px;
+    gap: 60px;
+  }
+
+  .footer-links-group {
+    display: flex;
+    gap: 60px; /* 各列の間隔 */
+  }
+
+  .footer-nav, .footer-sns {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .nav-title {
+    font-size: 0.6rem;
+    color: #444;
+    letter-spacing: 0.2em;
+    margin-bottom: 15px;
+    display: block;
+  }
+
+  .footer-nav a, .sns-link {
+    color: #888;
+    text-decoration: none;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    transition: color 0.3s;
+    white-space: nowrap;
+  }
+
+  .footer-nav a:hover, .sns-link:hover {
+    color: #d4af37;
+  }
+
+  /* スマホ対応 */
+  @media (max-width: 900px) {
+    .footer-content {
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 60px;
+    }
+
+    .footer-links-group {
+      width: 100%;
+      justify-content: space-around;
+      gap: 20px;
+    }
+
+    .footer-nav, .footer-sns {
+      align-items: center;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .footer-links-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr; /* スマホでは2列グリッド */
+      gap: 40px 20px;
+    }
+  }
+</style>
+
+	<style is:global>
+  /* --- AREA SECTION STYLE --- */
+  .area-section {
+      background-color: #000 !important; /* 黒背景を強制 */
+      border-top: 1px solid #1a1a1a;
+      width: 100%;
+      box-sizing: border-box;
+  }
+
+  .area-content {
+      display: grid !important;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: center;
+      margin-top: 50px;
+  }
+
+  .city-name {
+      font-size: 1.8rem;
+      font-weight: 300;
+      color: #d4af37 !important; /* varが効かない場合のために直接指定 */
+      margin-bottom: 20px;
+      letter-spacing: 0.1em;
+  }
+
+  .area-desc {
+      font-size: 0.95rem;
+      color: #888;
+      line-height: 1.8;
+      margin-bottom: 30px;
+  }
+
+  .area-list {
+      list-style: none;
+      padding: 0;
+      margin-bottom: 30px;
+      display: grid !important;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+  }
+
+  .area-list li {
+      font-size: 0.85rem;
+      color: #ccc;
+      padding-left: 20px;
+      position: relative;
+  }
+
+  .area-list li::before {
+      content: "—";
+      position: absolute;
+      left: 0;
+      color: #d4af37;
+  }
+
+  .area-note {
+      padding: 20px;
+      background: #0a0a0a;
+      border-left: 2px solid #d4af37;
+  }
+
+  .area-note p {
+      font-size: 0.8rem;
+      color: #666;
+      margin: 0;
+  }
+
+  .area-map-container {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      background: #111;
+      border: 1px solid #222;
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      position: relative;
+      overflow: hidden;
+  }
+
+  .map-placeholder {
+      text-align: center;
+      color: #333;
+  }
+
+  .map-icon {
+      font-size: 3rem;
+      display: block;
+      margin-bottom: 10px;
+      filter: grayscale(1);
+      opacity: 0.5;
+  }
+
+  .map-placeholder p {
+      letter-spacing: 0.5em;
+      font-size: 0.7rem;
+  }
+
+  /* スマホ対応 */
+  @media (max-width: 900px) {
+      .area-content {
+          grid-template-columns: 1fr !important;
+          gap: 40px;
+      }
+      .area-map-container {
+          order: -1;
+      }
+      .area-list {
+          grid-template-columns: 1fr !important;
+      }
+  }
+</style>
+
+
+<style is:global>
+  .flow-section {
+    background-color: #0a0a0a;
+    border-top: 1px solid #1a1a1a;
+  }
+
+  .flow-container {
+    max-width: 900px;
+    margin: 60px auto 0;
+    position: relative;
+  }
+
+  /* 縦のライン */
+  .flow-container::before {
+    content: "";
+    position: absolute;
+    left: 25px;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: linear-gradient(to bottom, #d4af37, #1a1a1a);
+    opacity: 0.3;
+  }
+
+  .flow-item {
+    display: flex;
+    gap: 40px;
+    margin-bottom: 60px;
+    position: relative;
+  }
+
+  .flow-item:last-child {
+    margin-bottom: 0;
+  }
+
+  .flow-num {
+    width: 50px;
+    height: 50px;
+    background: #000;
+    border: 1px solid #d4af37;
+    border-radius: 50%;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    font-family: serif;
+    color: #d4af37;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+    z-index: 1;
+  }
+
+  .flow-title {
+    font-size: 1.2rem;
+    font-weight: 400;
+    margin-bottom: 15px;
+    letter-spacing: 0.1em;
+    color: #fff;
+  }
+
+  .flow-text {
+    font-size: 0.9rem;
+    color: #888;
+    line-height: 1.8;
+    max-width: 600px;
+  }
+
+  /* スマホ対応 */
+  @media (max-width: 640px) {
+    .flow-container::before {
+      left: 20px;
+    }
+    .flow-num {
+      width: 40px;
+      height: 40px;
+      font-size: 0.8rem;
+    }
+    .flow-item {
+      gap: 20px;
+    }
+    .flow-title {
+      font-size: 1.1rem;
+    }
+    .flow-text {
+      font-size: 0.85rem;
+    }
+  }
+</style>
+
+
+<script is:inline>
+  const openBtn = document.getElementById('menu-trigger');
+  const closeBtn = document.getElementById('menu-close');
+  const menu = document.getElementById('mobile-menu');
+  const links = document.querySelectorAll('.menu-link');
+
+  function openMenu() {
+    menu.classList.add('is-open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeMenu() {
+    menu.classList.remove('is-open');
+    document.body.style.overflow = '';
+  }
+
+  openBtn.addEventListener('click', openMenu);
+  closeBtn.addEventListener('click', closeMenu);
+
+  links.forEach(link => {
+    link.addEventListener('click', closeMenu);
+  });
+
+  const modal = document.getElementById('linen-modal');
+  const openBtn = document.getElementById('open-linen-modal');
+  const closeBtn = document.getElementById('close-linen-modal');
+
+</script>
+
+<script is:inline>
+  // DOMが完全に読み込まれてから実行
+  document.addEventListener('DOMContentLoaded', () => {
+    const modal = document.getElementById('linen-modal');
+    const openBtn = document.getElementById('open-linen-modal');
+    const closeBtn = document.getElementById('close-linen-modal');
+
+    // 要素が存在するかチェック
+    if (openBtn && modal && closeBtn) {
+      
+      // 開くボタン
+      openBtn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation(); // 親のdetailsが開閉するのを防ぐ
+        modal.classList.add('is-visible');
+        document.body.style.overflow = 'hidden'; // 背面スクロール禁止
+      };
+
+      // 閉じるボタン
+      closeBtn.onclick = () => {
+        modal.classList.remove('is-visible');
+        document.body.style.overflow = '';
+      };
+
+      // 背景クリックで閉じる
+      window.onclick = (event) => {
+        if (event.target === modal) {
+          modal.classList.remove('is-visible');
+          document.body.style.overflow = '';
+        }
+      };
+    }
+  });
+</script>
+
+<script is:inline>
+  document.addEventListener('DOMContentLoaded', () => {
+    // モーダル制御用の共通関数
+    const setupModal = (modalId, openBtnId, closeBtnId) => {
+      const modal = document.getElementById(modalId);
+      const openBtn = document.getElementById(openBtnId);
+      const closeBtn = document.getElementById(closeBtnId);
+
+      if (openBtn && modal && closeBtn) {
+        openBtn.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          modal.classList.add('is-visible');
+          document.body.style.overflow = 'hidden';
+        };
+
+        closeBtn.onclick = () => {
+          modal.classList.remove('is-visible');
+          document.body.style.overflow = '';
+        };
+
+        // 背景クリックで閉じる処理をwindow全体に一度だけ設定（あるいは各モーダルに設定）
+        modal.onclick = (event) => {
+          if (event.target === modal) {
+            modal.classList.remove('is-visible');
+            document.body.style.overflow = '';
+          }
+        };
+      }
+    };
+
+    // 2番目：リネン管理
+    setupModal('linen-modal', 'open-linen-modal', 'close-linen-modal');
+    
+    // 3番目：運営代行
+    setupModal('proxy-modal', 'open-proxy-modal', 'close-proxy-modal');
+  });
+</script>
+
+<script is:inline>
+  document.addEventListener('DOMContentLoaded', () => {
+    
+    // --- 共通の制御関数 ---
+    const setupToggle = (triggerId, targetId, activeClass, isModal = false) => {
+      const trigger = document.getElementById(triggerId);
+      const target = document.getElementById(targetId);
+      if (!trigger || !target) return;
+
+      const open = () => {
+        target.classList.add(activeClass);
+        document.body.style.overflow = 'hidden'; // 背面のスクロールを止める
+      };
+
+      const close = () => {
+        target.classList.remove(activeClass);
+        document.body.style.overflow = ''; // スクロール再開
+      };
+
+      trigger.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        target.classList.contains(activeClass) ? close() : open();
+      };
+
+      // モーダルの場合、背景クリックで閉じる
+      if (isModal) {
+        target.onclick = (e) => {
+          if (e.target === target) close();
+        };
+      }
+
+      return { open, close };
+    };
+
+    // --- 1. スマホメニューの制御 ---
+    const mobileMenu = setupToggle('menu-trigger', 'mobile-menu', 'is-open');
+    
+    // メニュー内のリンクをクリックしたら閉じる
+    const menuLinks = document.querySelectorAll('.menu-link');
+    menuLinks.forEach(link => {
+      link.addEventListener('click', () => {
+        if (mobileMenu) mobileMenu.close();
+      });
+    });
+
+    // メニューの「BACK（閉じる）」ボタン
+    const menuCloseBtn = document.getElementById('menu-close');
+    if (menuCloseBtn) {
+      menuCloseBtn.onclick = () => mobileMenu.close();
+    }
+
+    // --- 2. リネン管理ポップアップ ---
+    const linenModal = setupToggle('open-linen-modal', 'linen-modal', 'is-visible', true);
+    const linenCloseBtn = document.getElementById('close-linen-modal');
+    if (linenCloseBtn) {
+      linenCloseBtn.onclick = () => {
+        const modal = document.getElementById('linen-modal');
+        modal.classList.remove('is-visible');
+        document.body.style.overflow = '';
+      };
+    }
+
+    // --- 3. 運営代行シミュレーションポップアップ ---
+    const proxyModal = setupToggle('open-proxy-modal', 'proxy-modal', 'is-visible', true);
+    const proxyCloseBtn = document.getElementById('close-proxy-modal');
+    if (proxyCloseBtn) {
+      proxyCloseBtn.onclick = () => {
+        const modal = document.getElementById('proxy-modal');
+        modal.classList.remove('is-visible');
+        document.body.style.overflow = '';
+      };
+    }
+  });
+</script>
+</body>
+</html>
