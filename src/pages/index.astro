@@ -361,6 +361,74 @@ const calculatePrice = (m2) => {
   }
 </style>
 
+
+<style is:global>
+  /* 950px以下でメニューボタンを表示する */
+  @media (max-width: 950px) {
+    .nav-desktop {
+      display: none; /* デスクトップ用メニューを隠す */
+    }
+
+    .menu-trigger {
+      display: block !important; /* 強制的にボタンを表示 */
+      background: none;
+      border: none;
+      color: #d4af37;
+      font-size: 0.8rem;
+      letter-spacing: 0.2em;
+      cursor: pointer;
+      z-index: 1001;
+    }
+  }
+</style>
+
+<script is:inline>
+  document.addEventListener('DOMContentLoaded', () => {
+    
+    const setupToggle = (triggerId, targetId, activeClass, isModal = false) => {
+      const trigger = document.getElementById(triggerId);
+      const target = document.getElementById(targetId);
+      if (!trigger || !target) return;
+
+      trigger.onclick = (e) => {
+        // --- 修正ポイント ---
+        e.preventDefault();
+        e.stopPropagation(); // 他の要素（detailsなど）にクリックを伝えない
+        
+        if (target.classList.contains(activeClass)) {
+          target.classList.remove(activeClass);
+          document.body.style.overflow = '';
+        } else {
+          target.classList.add(activeClass);
+          document.body.style.overflow = 'hidden';
+        }
+      };
+
+      if (isModal) {
+        target.onclick = (e) => {
+          if (e.target === target) {
+            target.classList.remove(activeClass);
+            document.body.style.overflow = '';
+          }
+        };
+      }
+    };
+
+    // FAQ内のボタン（詳細・計算例）が勝手にページ移動しないように保護
+    const faqButtons = document.querySelectorAll('.detail-open-btn');
+    faqButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault(); // URLに「#」が付くのを防ぐ
+        e.stopPropagation(); // 親のアコーディオンが閉じたり開いたりするのを防ぐ
+      });
+    });
+
+    // 既存の呼び出し
+    setupToggle('menu-trigger', 'mobile-menu', 'is-open');
+    setupToggle('open-linen-modal', 'linen-modal', 'is-visible', true);
+    setupToggle('open-proxy-modal', 'proxy-modal', 'is-visible', true);
+  });
+</script>
 <style is:global>
   /* 9項目に増えたためのスマホ用調整 */
   @media (max-width: 768px) {
@@ -1242,6 +1310,14 @@ const calculatePrice = (m2) => {
     margin-bottom: 10px;
   }
 
+  .faq-item summary {
+    list-style: none;
+    cursor: pointer;
+    position: relative;
+    padding: 20px 0;
+    user-select: none; /* テキスト選択による誤作動防止 */
+  }
+
   .faq-question {
     list-style: none; /* デフォルトの三角を消す */
     padding: 25px 0;
@@ -1362,6 +1438,9 @@ const calculatePrice = (m2) => {
     margin-top: 10px;
     cursor: pointer;
     transition: 0.3s;
+	display: inline-block;
+	position: relative;
+	z-index: 10;
   }
   .detail-open-btn:hover {
     background: #d4af37;
